@@ -116,6 +116,8 @@ def _main_(args):
         video_writer.release()  
     else:
         if os.path.isfile(image_path):
+
+            # image read shape is (height, width)
             image = cv2.imread(image_path)
             boxes = yolo.predict(image)
             image = draw_boxes(image, boxes, config['model']['labels'])

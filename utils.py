@@ -83,8 +83,12 @@ def decode_netout(netout, anchors, nb_class, obj_threshold=0.3, nms_threshold=0.
     boxes = []
     
     # decode the output by the network
-    netout[..., 4]  = _sigmoid(netout[..., 4])
-    netout[..., 5:] = netout[..., 4][..., np.newaxis] * _softmax(netout[..., 5:])
+    # look at the last axis which is the one with size 85
+    # out of these 85, 5 is (x,y, w, h, confidence)
+    netout[..., 4]  = _sigmoid(netout[..., 4])   # 4th axis is the confidence score
+    # multiply the class probablities with the confidence scores
+    netout[..., 5:] = netout[..., 4][..., np.newaxis] * _softmax(netout[..., 5:])  # 5th axis onwards are individual class probs
+    # for class probablies less than threshold, set it to 0 other set it to 1
     netout[..., 5:] *= netout[..., 5:] > obj_threshold
     
     for row in range(grid_h):

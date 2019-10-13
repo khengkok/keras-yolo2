@@ -236,6 +236,8 @@ class BatchGenerator(Sequence):
             x_batch = np.zeros((r_bound - l_bound, self.config['IMAGE_H'], self.config['IMAGE_W'], 1))
 
         b_batch = np.zeros((r_bound - l_bound, 1     , 1     , 1    ,  self.config['TRUE_BOX_BUFFER'], 4))   # list of self.config['TRUE_self.config['BOX']_BUFFER'] GT boxes
+        # y_batch = (batch_size, 13, 13, 5, (4+1+80))
+        # 13 x 13 is the grid, 5 is the number of anchor boxes, and 4 is the xmin, ymin, xmax, ymax, and confidence score + 80 classes)
         y_batch = np.zeros((r_bound - l_bound, self.config['GRID_H'],  self.config['GRID_W'], self.config['BOX'], 4+1+len(self.config['LABELS'])))                # desired network output
 
         for train_instance in self.images[l_bound:r_bound]:
@@ -247,20 +249,29 @@ class BatchGenerator(Sequence):
             
             for obj in all_objs:
                 if obj['xmax'] > obj['xmin'] and obj['ymax'] > obj['ymin'] and obj['name'] in self.config['LABELS']:
+
+                    # centere with respective the original image
                     center_x = .5*(obj['xmin'] + obj['xmax'])
+                    # center_x, center_y are with respective to the 13 x 13 image
                     center_x = center_x / (float(self.config['IMAGE_W']) / self.config['GRID_W'])
                     center_y = .5*(obj['ymin'] + obj['ymax'])
                     center_y = center_y / (float(self.config['IMAGE_H']) / self.config['GRID_H'])
 
+                    # find out which grid the centre of the object (the true bounding box) belongs to
                     grid_x = int(np.floor(center_x))
                     grid_y = int(np.floor(center_y))
 
                     if grid_x < self.config['GRID_W'] and grid_y < self.config['GRID_H']:
                         obj_indx  = self.config['LABELS'].index(obj['name'])
-                        
+
+                        # image_w / grid_w, image_h / grid_h == size of each grid cell, e.g.
+                        # in a 416 x 416 image, the size of grid cell = 416/13, 416/13 = 32 x 32
+                        # so the centre_w and center_h is a percentage of the grid_cell
                         center_w = (obj['xmax'] - obj['xmin']) / (float(self.config['IMAGE_W']) / self.config['GRID_W']) # unit: grid cell
                         center_h = (obj['ymax'] - obj['ymin']) / (float(self.config['IMAGE_H']) / self.config['GRID_H']) # unit: grid cell
-                        
+
+                        # center of true bounding gox with respective the 13 x 13 image
+                        # width and height of true bounding box with respective size of each grid cell
                         box = [center_x, center_y, center_w, center_h]
 
                         # find the anchor that best predicts this box

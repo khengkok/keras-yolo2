@@ -358,18 +358,23 @@ class YOLO(object):
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
         elif len(image.shape) == 2:
             image = image[:,:,np.newaxis]
-
+        # input_size is specified as (height, width)
+        # opencv resize(image, width, height)
         image = cv2.resize(image, (self.input_size[1], self.input_size[0]))
         image = self.feature_extractor.normalize(image)
+
         if len(image.shape) == 3:
-            input_image = image[:,:,::-1]
-            input_image = image[np.newaxis,:]
+            # in opencv, the channel ordering is BGR, so we need to reverse it as RGB (the last axis)
+            input_imagex = image[:,:,::-1]
+            input_imagex = input_imagex[np.newaxis,:]
+            print('here')
         else:
-            input_image = image[np.newaxis,:,:,np.newaxis]
+            input_imagex = image[np.newaxis,:,:,np.newaxis]
+            print('there')
         
         dummy_array = np.zeros((1,1,1,1,self.max_box_per_image,4))
 
-        netout = self.model.predict([input_image, dummy_array])[0]
+        netout = self.model.predict([input_imagex, dummy_array])[0]
             
         boxes  = decode_netout(netout, self.anchors, self.nb_class)
 
